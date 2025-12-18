@@ -1,0 +1,8 @@
+name,age,city,department
+Alice,25,Sydney,Sales
+Bob,,Melbourne,Sales
+Charlie,30,,Engineering
+,28,Brisbane,Engineering
+Alice,25,Sydney,Sales
+David,40,Sydney,
+Eve,,Melbourne,Marketing
