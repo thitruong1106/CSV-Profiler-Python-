@@ -1,11 +1,5 @@
-"""
-Building a CSV column profiler 
-- Given a csv, i will tell you what inside each column 
-
-"""
-
-#function - load csv 
 import csv
+
 def load_csv(path: str):
     try: 
         with open(path, 'r', encoding='utf-8', newline='') as file: 
@@ -69,7 +63,7 @@ def profile_columns(rows):
         print(f"Missing% : {missing_percent:.1f}%")
         if counts: 
             sorted_items = [] 
-            
+
             for value, count in counts.items(): 
                 sorted_items.append((count, value))
             sorted_items.sort(reverse=True)
