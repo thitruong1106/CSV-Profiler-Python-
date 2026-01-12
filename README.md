@@ -1,12 +1,14 @@
 # CSV Profiler (Python)
 
-A simple CSV profiling tool written in Python that analyses column-level data quality and distribution. 
+A lightweight CSV profiling tool written in Python to quickly assess data quality and value distribution at the column level.
 
-The tool is used to quickly understand the datasets, by reporting missing values, frequency counts, and common values. 
+This tool is designed to help analysts understand a dataset **before** performing analysis, writing SQL queries, or building dashboards by highlighting missing values, common categories, and potential data quality issues.
+
+---
 
 ## Features 
 
-- Safe CSV loading using csv.Dictreader 
+- Safe CSV loading using csv.DictReader 
 - Per-column statistic 
     - Total rows 
     - Missing / empty values 
@@ -17,7 +19,20 @@ The tool is used to quickly understand the datasets, by reporting missing values
 - Handles empty / missing data 
 - Clean, readable console output 
 
+---
+
+## Wehn to use this tool 
+
+This tool is useful at the **early stage of data analysis**, for example: 
+- Before exploring a new dataset 
+- Before loading data into SQL table 
+- Before building reports and dashboards 
+- When validating data received from external sources 
+
+It helps surface data issues early so they can be addressed before data analysis. 
+
 ## Technologies 
 - Python 3 
 - csv module 
 
+---

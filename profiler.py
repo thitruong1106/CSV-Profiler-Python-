@@ -1,76 +1,152 @@
 import csv
+from collections import Counter
+from typing import List, Dict, Any, Optional, Tuple
 
-def load_csv(path: str):
-    try: 
-        with open(path, 'r', encoding='utf-8', newline='') as file: 
+
+DEFAULT_MISSING_TOKENS = {"", "na", "n/a", "null", "none"} 
+
+
+def load_csv(path: str) -> List[Dict[str, str]]:
+    """
+    Load a CSV file into a list of dictionaries.
+
+    Returns:
+        List[Dict[str, str]]: rows (empty list if file is empty or can't be read)
+    """
+    try:
+        with open(path, "r", encoding="utf-8", newline="") as file:
             reader = csv.DictReader(file)
             rows = list(reader)
-            if not rows: 
-                print("Empty file")
-                return None 
+            if not rows:
+                print("Empty file (no data rows).")
             return rows
-    except FileNotFoundError: 
-        print(f"File not found error: {path}")
-        return None 
-    except Exception as e: 
-        print(f"Error: {e}")
+    except FileNotFoundError:
+        print(f"File not found: {path}")
+        return []
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return []
 
-def profile_columns(rows):
+
+def is_missing(value: Any, missing_tokens: set) -> bool: #function returns true or false. Simply saying, True if value is missing, False if not 
     """
-    Print summary statistic for each column in the dataset. 
+    Check if a value should be considered missing based on None status or predefined missing tokens.
 
-    For each column, the function prints the following: 
-        - Column name 
-        - Total numbers of rows 
-        - Count of missing values (None OR "")
-        - Count of non-missing vlaues 
-        - Percentage of missing values 
-        - Top 3 most frequent non-missing values 
-        - Number of unique non-missing values 
+    This function determines whether a given value represents missing data by checking:
+    1. If the value is None
+    2. If the value is a string that, when cleaned (stripped and lowercased),
+    matches any token in the provided set of missing tokens.
 
-    Args: 
-        rows (list[dict]): List of row dictionaries (already cleaned)
-    
-    Returns: 
-        None    
+    Parameters
+    ----------
+    value : Any
+        The value to check for missing status. Can be any Python object.
+    missing_tokens : set
+        A set of string tokens that represent missing values when encountered.
+        String values are case-insensitively compared after stripping whitespace.
+
+    Returns
+    -------
+    bool
+        True if the value is considered missing (either None or a string matching
+        a missing token), False otherwise.
+
+    Examples
+    --------
+    >>> missing_tokens = {'na', 'n/a', 'null', ''}
+    >>> is_missing(None, missing_tokens)
+    True
+    >>> is_missing('NA', missing_tokens)
+    True
+    >>> is_missing('valid data', missing_tokens)
+    False
     """
-    if not rows: 
-        print("No rows found")
-        return
+    if value is None:
+        return True
+    if isinstance(value, str):
+        cleaned = value.strip().lower()
+        return cleaned in missing_tokens #is the cleaned value, one of the known missing values
+    return False #safe default for any value that doesnt match known missing case, since value is not none and not a missing string token, treated as valid data. 
+
+
+def profile_columns(rows: List[Dict[str, Any]],missing_tokens: Optional[set] = None) -> List[Dict[str, Any]]:
+    """
+    Build a profiling report per column.
+
+    Returns:
+        List of dicts, one per column, containing summary stats.
+    """
+    if not rows:
+        return []
+
+    if missing_tokens is None:
+        missing_tokens = DEFAULT_MISSING_TOKENS
+
     columns = list(rows[0].keys())
-    for column in columns: 
-        print("-" * 30)
-        print(f"Column: {column}")
-        total_rows = len(rows) 
-        missing_count = 0 
-        non_missing = 0 
-        counts = {}
+    total_rows = len(rows)
+
+    report = []
+
+    for col in columns:
+        values = []
+        missing_count = 0
+
         for row in rows:
-            value = row.get(column)
-            if value is None or value == "":
+            v = row.get(col)
+            if is_missing(v, missing_tokens): #true, + missing 
                 missing_count += 1
-            else: 
-                non_missing += 1 
-                if value in counts:
-                    counts[value] += 1 
-                else: 
-                    counts[value] = 1 
+            else:
+                values.append(v.strip() if isinstance(v, str) else v)
 
+        counter = Counter(values)
+        top_values: List[Tuple[Any, int]] = counter.most_common(3)
+
+        non_missing_count = total_rows - missing_count
         missing_percent = (missing_count / total_rows) * 100
-        print(f"Total: rows: {total_rows}")
-        print(f"Missing counts: {missing_count}")
-        print(f"Non Missing counts: {non_missing}")
-        print(f"Missing% : {missing_percent:.1f}%")
-        if counts: 
-            sorted_items = [] 
 
-            for value, count in counts.items(): 
-                sorted_items.append((count, value))
-            sorted_items.sort(reverse=True)
+        report.append({
+            "column": col,
+            "total_rows": total_rows,
+            "missing_count": missing_count,
+            "non_missing_count": non_missing_count,
+            "missing_percent": round(missing_percent, 1),
+            "unique_count": len(counter),
+            "top_values": top_values,
+        })
 
-            for i in range(min(3, len(sorted_items))):
-                count, value = sorted_items[i]
-                print(f"{i+1}. '{value}' : {count} times")
-            print(f"- Total unique values: {len(counts)}")
-        else: 
-            print("Values are missing or empty")
+    return report
+
+
+def print_profile(report: List[Dict[str, Any]]) -> None:
+    """
+    Docstring for print_profile
+    
+    :param report: Description
+    :type report: List[Dict[str, Any]]
+    """
+    if not report:
+        print("No rows found (nothing to profile).")
+        return
+
+    for col_report in report:
+        print("-" * 40)
+        print(f"Column: {col_report['column']}")
+        print(f"Total rows: {col_report['total_rows']}")
+        print(f"Missing count: {col_report['missing_count']}")
+        print(f"Non-missing count: {col_report['non_missing_count']}")
+        print(f"Missing %: {col_report['missing_percent']}%")
+        print(f"Unique values (non-missing): {col_report['unique_count']}")
+
+        if col_report["top_values"]:
+            print("Top values:")
+            for i, (value, count) in enumerate(col_report["top_values"], start=1):
+                print(f"  {i}. '{value}' — {count}")
+        else:
+            print("Top values: (none)")
+
+
+if __name__ == "__main__":
+    path = input("Enter path: ")
+    rows = load_csv(path)
+    report = profile_columns(rows)
+    print_profile(report)

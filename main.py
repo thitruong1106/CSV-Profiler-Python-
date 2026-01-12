@@ -1,10 +1,10 @@
-from profiler import profile_columns, load_csv
+from profiler import profile_columns, load_csv, print_profile
 
 def main():
-    path = input("Enter CSV path: ")
+    path = input("Enter path: ")
     rows = load_csv(path)
-    if rows:
-        profile_columns(rows)
+    report = profile_columns(rows)
+    print_profile(report)
 
 if __name__ == "__main__":
     main()
